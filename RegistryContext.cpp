@@ -124,22 +124,9 @@ const wchar_t *PrimarySaltForClass(int mod_class)
     }
     if (mod_class == 1)
     {
-        return kSalt97B6;
-    }
-    return kSaltD185;
-}
-
-const wchar_t *AlternateSaltForClass(int mod_class)
-{
-    if (mod_class == 1)
-    {
         return kSaltD185;
     }
-    if (mod_class == 2)
-    {
-        return kSalt97B6;
-    }
-    return NULL;
+    return kSalt97B6;
 }
 
 std::wstring BuildCanonicalInput(const UserChoiceLatestHash::AssocContext &ctx, const wchar_t *salt)
@@ -178,7 +165,6 @@ std::wstring BuildCanonicalInput(const UserChoiceLatestHash::AssocContext &ctx, 
 bool LoadAssociationContext(const std::wstring &assoc, UserChoiceLatestHash::AssocContext *ctx)
 {
     ctx->assoc = assoc;
-    ctx->alternate_used = false;
     ctx->mod_class = -1;
 
     if (!QueryRegString(HKEY_LOCAL_MACHINE,
@@ -283,27 +269,12 @@ bool VerifyCurrentAssociation(const std::wstring &assoc,
         return false;
     }
 
-    const wchar_t *alternate_salt = AlternateSaltForClass(ctx->mod_class);
-    if (alternate_salt != NULL)
-    {
-        ctx->canonical_alternate = BuildCanonicalInput(*ctx, alternate_salt);
-        UserChoiceLatestHash::ComputeHash(ctx->canonical_alternate, seeds, false, &ctx->computed_alternate, NULL);
-        if (_wcsicmp(ctx->registry_hash.c_str(), ctx->computed_alternate.c_str()) == 0)
-        {
-            ctx->alternate_used = true;
-        }
-    }
-
     return true;
 }
 
 int PrintVerificationResult(const AssocContext &ctx)
 {
-    const std::wstring &effective_hash =
-        ctx.alternate_used ? ctx.computed_alternate : ctx.computed_primary;
-    const std::wstring &effective_canonical =
-        ctx.alternate_used ? ctx.canonical_alternate : ctx.canonical_primary;
-    const bool match = _wcsicmp(ctx.registry_hash.c_str(), effective_hash.c_str()) == 0;
+    const bool match = _wcsicmp(ctx.registry_hash.c_str(), ctx.computed_primary.c_str()) == 0;
 
     std::wcout
         << L"assoc: " << ctx.assoc << L"\n"
@@ -313,16 +284,10 @@ int PrintVerificationResult(const AssocContext &ctx)
         << L"sid: " << ctx.sid << L"\n"
         << L"timestamp: " << ctx.timestamp_hex << L"\n"
         << L"registry_hash: " << ctx.registry_hash << L"\n"
-        << L"computed_hash: " << effective_hash << L"\n"
+        << L"computed_hash: " << ctx.computed_primary << L"\n"
         << L"mod_class: " << ctx.mod_class << L"\n"
-        << L"salt_mapping: " << (ctx.alternate_used ? L"alternate" : L"primary") << L"\n"
         << L"match: " << (match ? L"true" : L"false") << L"\n"
-        << L"canonical: " << effective_canonical << L"\n";
-
-    if (!ctx.computed_alternate.empty())
-    {
-        std::wcout << L"computed_hash_alt: " << ctx.computed_alternate << L"\n";
-    }
+        << L"canonical: " << ctx.canonical_primary << L"\n";
 
     return match ? 0 : 2;
 }

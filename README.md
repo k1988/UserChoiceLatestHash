@@ -1,11 +1,19 @@
 # UserChoiceLatestHash
 
-UserChoiceLatestHash is a standalone C++ tool for computing and verifying UserChoiceLatest hashes on Windows. It
-rebuilds the canonical input string from registry state, machine ID, SID, ProgID, and timestamp, then reproduces
-the same hash generation pipeline used by the target environment. The project includes direct hash mode, debug
-mode for inspecting intermediate values, and live verification mode for checking whether the registry hash matches
-the computed result.
-  
+Independent C++ implementation for computing and verifying `UserChoiceLatest` hashes.
+
+This project is organized into separate modules:
+
+- `HashTables.cpp`
+  Loads the lookup tables.
+- `HashCodec.cpp`
+  Implements the `7D60` hashing pipeline.
+- `RegistryContext.cpp`
+  Reads registry context and builds canonical input strings.
+- `Cli.cpp`
+  Handles command-line modes and formatted output.
+- `main.cpp`
+  Thin executable entry point.
 
 ## Build
 
@@ -59,8 +67,6 @@ and falls back to:
 
 - `UserChoice`
 
-The code also tries the alternate salt mapping for `% 3` cases where the two non-zero classes can be ambiguous.
-
 ## Current assumptions
 
 - The fixed working seeds are constant for the target environment this tool is meant to run against.
@@ -103,5 +109,4 @@ Typical fields in the output:
   The hash calculated by this implementation.
 - `match`
   `true` when both values are identical.
-
 
